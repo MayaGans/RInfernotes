@@ -132,7 +132,7 @@ vectorized <- function(x) {
   return(lsum)
 }
 
-x <- 1000
+x <- 1:10000
 
 bench::mark(non_vectorized(x), vectorized(x)
             )[c("expression", "min", "median", "itr/sec", "n_gc")]
