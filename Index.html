@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>R Inferno</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Maya Gans" />
+    <meta name="date" content="2020-09-07" />
+    <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+
+&lt;img src="cover.png" style="width:50%;display: block;margin-left: auto;margin-right: auto;opacity:0.1;"&gt;&lt;/img&gt;
+
+&lt;div style="position: absolute;top: 40%;left: 50%;transform: translate(-50%, -50%);"&gt;
+&lt;h1 style="margin-bottom:0;font-size:110px !important;"&gt;&lt;a class="title" href="http://www.burns-stat.com/pages/Tutor/R_inferno.pdf"&gt;The R Inferno&lt;a&gt;&lt;/h1&gt;
+
+&lt;div style="text-align:center;"&gt;Content bySlides by Maya Gans&lt;/div&gt;
+&lt;/div&gt;
+
+---
+
+
+&lt;div style="position: absolute;top: 40%;left: 50%;transform: translate(-50%, -50%);text-align:center;"&gt;
+After a journey, we arrived at an archway. Inscribed on it: “Through me
+the way into the suffering city, through me the way among the lost.” Through
+the archway we went.
+&lt;/div&gt;
+
+&lt;div style="position: absolute;top: 60%;left: 68%;transform: translate(-50%, -50%);text-align:right;color:#F00000;"&gt;
+-Dante Alighieri
+&lt;/div&gt;
+
+---
+
+
+.container[
+.slide-one[
+]
+
+.right-side[
+ # Floating Point Trap
+
+
+```r
+.1 == .3 / 3
+```
+
+```
+## [1] FALSE
+```
+
+
+]
+]
+
+---
+
+.container[
+.slide-two[
+]
+
+&lt;div style="font-size:12px !important;"&gt;
+.right-side[
+
+&lt;h1 style="margin-bottom:0;"&gt;Growing Objects&lt;/h1&gt;
+
+
+```r
+grow &lt;- function(n) {
+  vec &lt;- numeric(0)
+  for(i in 1:n) vec &lt;- c(vec, i)
+  return(vec)
+}
+
+subscript &lt;- function(n) {
+  vec &lt;- numeric(n)
+  for(i in 1:n) vec[i] &lt;- i
+  return(vec)
+}
+
+colon_op &lt;- function(n) {
+  vec &lt;- 1:n
+  return(vec)
+}
+
+n &lt;- 100
+
+bench::mark(grow(n), subscript(n), colon_op(n)
+            )[c("expression", "min", "median", "itr/sec", "n_gc")]
+```
+
+```
+## # A tibble: 3 x 4
+##   expression        min   median `itr/sec`
+##   &lt;bch:expr&gt;   &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt;
+## 1 grow(n)       29.77µs  49.58µs    18714.
+## 2 subscript(n)   6.19µs   7.51µs   115130.
+## 3 colon_op(n)     376ns    443ns  1417894.
+```
+
+&lt;/div&gt;
+
+]
+]
+
+---
+
+.container[
+.slide-three[
+]
+
+&lt;div style="font-size:12px !important;"&gt;
+.right-side[
+ # Failing to Vectorize
+
+
+```r
+non_vectorized &lt;- function(x) {
+  lsum &lt;- 0
+  for(i in 1:length(x)) {
+  lsum &lt;- lsum + log(x[i])
+  }
+  return(lsum)
+}
+
+vectorized &lt;- function(x) {
+  lsum &lt;- sum(log(x))
+  return(lsum)
+}
+
+x &lt;- 1000
+
+bench::mark(non_vectorized(x), vectorized(x)
+            )[c("expression", "min", "median", "itr/sec", "n_gc")]
+```
+
+```
+## # A tibble: 2 x 4
+##   expression             min   median `itr/sec`
+##   &lt;bch:expr&gt;        &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt;
+## 1 non_vectorized(x)    715ns    854ns  1016764.
+## 2 vectorized(x)        574ns    713ns   985481.
+```
+&lt;/div&gt;
+]
+]
+
+---
+
+.container[
+.slide-four[
+]
+
+&lt;div style="font-size:3px !important;"&gt;
+.right-side[
+ # Over Vectorizing
+ 
+
+```r
+&gt; apply
+function (X, MARGIN, FUN, ...) 
+{
+    FUN &lt;- match.fun(FUN)
+    dl &lt;- length(dim(X))
+    if (!dl) 
+        stop("dim(X) must have a positive length")
+    if (is.object(X)) 
+        X &lt;- if (dl == 2L) 
+            as.matrix(X)
+        else as.array(X)
+    d &lt;- dim(X)
+    dn &lt;- dimnames(X)
+    ds &lt;- seq_len(dl)
+    if (is.character(MARGIN)) {
+        if (is.null(dnn &lt;- names(dn))) 
+            stop("'X' must have named dimnames")
+        MARGIN &lt;- match(MARGIN, dnn)
+        if (anyNA(MARGIN)) 
+            stop("not all elements of 'MARGIN' are names of dimensions")
+    }
+    d.call &lt;- d[-MARGIN]
+    d.ans &lt;- d[MARGIN]
+    if (anyNA(d.call) || anyNA(d.ans)) 
+        stop("'MARGIN' does not match dim(X)")
+    s.call &lt;- ds[-MARGIN]
+    s.ans &lt;- ds[MARGIN]
+    dn.call &lt;- dn[-MARGIN]
+    dn.ans &lt;- dn[MARGIN]
+    d2 &lt;- prod(d.ans)
+    if (d2 == 0L) {
+        newX &lt;- array(vector(typeof(X), 1L), dim = c(prod(d.call), 
+            1L))
+        ans &lt;- forceAndCall(1, FUN, if (length(d.call) &lt; 2L) newX[, 
+            1] else array(newX[, 1L], d.call, dn.call), ...)
+        return(if (is.null(ans)) ans else if (length(d.ans) &lt; 
+            2L) ans[1L][-1L] else array(ans, d.ans, dn.ans))
+    }
+    newX &lt;- aperm(X, c(s.call, s.ans))
+    dim(newX) &lt;- c(prod(d.call), d2)
+    ans &lt;- vector("list", d2)
+    if (length(d.call) &lt; 2L) {
+        if (length(dn.call)) 
+            dimnames(newX) &lt;- c(dn.call, list(NULL))
+*       for (i in 1L:d2) {
+            tmp &lt;- forceAndCall(1, FUN, newX[, i], ...)
+            if (!is.null(tmp)) 
+                ans[[i]] &lt;- tmp
+        }
+    }
+*   else for (i in 1L:d2) {
+        tmp &lt;- forceAndCall(1, FUN, array(newX[, i], d.call, 
+            dn.call), ...)
+        if (!is.null(tmp)) 
+            ans[[i]] &lt;- tmp
+    }
+    ans.list &lt;- is.recursive(ans[[1L]])
+    l.ans &lt;- length(ans[[1L]])
+    ans.names &lt;- names(ans[[1L]])
+    if (!ans.list) 
+        ans.list &lt;- any(lengths(ans) != l.ans)
+    if (!ans.list &amp;&amp; length(ans.names)) {
+        all.same &lt;- vapply(ans, function(x) identical(names(x), 
+            ans.names), NA)
+        if (!all(all.same)) 
+            ans.names &lt;- NULL
+    }
+    len.a &lt;- if (ans.list) 
+        d2
+    else length(ans &lt;- unlist(ans, recursive = FALSE))
+    if (length(MARGIN) == 1L &amp;&amp; len.a == d2) {
+        names(ans) &lt;- if (length(dn.ans[[1L]])) 
+            dn.ans[[1L]]
+        ans
+    }
+    else if (len.a == d2) 
+        array(ans, d.ans, dn.ans)
+    else if (len.a &amp;&amp; len.a%%d2 == 0L) {
+        if (is.null(dn.ans)) 
+            dn.ans &lt;- vector(mode = "list", length(d.ans))
+        dn1 &lt;- list(ans.names)
+        if (length(dn.call) &amp;&amp; !is.null(n1 &lt;- names(dn &lt;- dn.call[1])) &amp;&amp; 
+            nzchar(n1) &amp;&amp; length(ans.names) == length(dn[[1]])) 
+            names(dn1) &lt;- n1
+        dn.ans &lt;- c(dn1, dn.ans)
+        array(ans, c(len.a%/%d2, d.ans), if (!is.null(names(dn.ans)) || 
+            !all(vapply(dn.ans, is.null, NA))) 
+            dn.ans)
+    }
+    else ans
+}
+&lt;bytecode: 0x7f963cc1f208&gt;
+&lt;environment: namespace:base&gt;
+```
+]
+&lt;/div&gt;
+
+.loop[
+The `apply` function has a `for` loop in its definition.
+The `lapply` function buries the loop, but execution times tend to be roughly
+equal to an explicit `for` loop. 
+]
+]
+
+---
+
+.container[
+.slide-five[
+]
+.right-side[
+ # Not Writing Functions
+ * Abstraction
+ * Simplicity
+ * Consistency
+]
+]
+
+---
+
+.container[
+.slide-six[
+]
+
+.right-side[
+ # Doing Global Assignments
+ 
+If you think you need `&lt;&lt;-`, think again. 
+
+If on reflection you still think you need `&lt;&lt;-`, think again.
+
+]
+]
+
+---
+
+.container[
+.slide-seven[
+]
+
+.right-side[
+ ## Tripping on Object Orientation
+ * S3
+ * S4
+ * R6
+ * Namespaces
+]
+]
+
+---
+
+.container[
+.slide-eight[
+]
+
+.right-side[
+.small-list[
+
+# Believing it Does as Intended
+ 
+ * debugging with `browser`
+ * `?Syntax` to check operator precedence 
+ * `x == NA`
+ * testing `NULL`
+ * `== != %in%`
+ * logical &gt; integer &gt; numeric &gt; complex &gt; character
+ * excluding named lists and missing values
+ * `1 + NULL == numeric(0)`
+ * `sum(numeric(0)) == 0`
+ * partial matching
+ * `print` gives you indexes, `cat` just contents
+ * Quotes, backslashes and backquotes
+ * Subscripting strips attiributes
+ * Name masking
+ * `sort.list` is not for lists!
+ * `source` vs `attach` vs `load`
+]
+]
+]
+
+---
+
+.container[
+.slide-nine[
+]
+
+.right-side[
+ # Unhelpfully Seeking Help
+ * Read the documentation
+ * Update Package
+ * Select the best listserv
+ * Use a descriptive subject line
+ * Clearly state question
+ * Write a reproducible example
+ * W  A  I  T
+]
+]
+
+
+&lt;style&gt;
+.remark-slide-content {
+padding: 0;
+}
+
+.container {
+  width: 100%;
+  height: 100%;
+}
+
+.slide-one {
+    background-image: url("circle1.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.slide-two {
+    background-image: url("circle2.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.slide-three {
+    background-image: url("circle3.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.slide-four {
+    background-image: url("circle4.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.slide-five {
+    background-image: url("circle5.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.slide-six {
+    background-image: url("circle6.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.slide-seven {
+    background-image: url("circle7.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.slide-eight {
+    background-image: url("circle8.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.slide-nine {
+    background-image: url("circle9.jpg");
+    height: 100%;
+    width: 40%;
+    background-position: center;
+  background-size: cover;
+    float: left;
+}
+
+.right-side {
+  width: 60%;
+  float: right;
+  text-indent: 10%;
+  list-style-position: inside;
+}
+
+.title {
+  text-decoration:none;
+  color:#F00000;
+  text-align: center;
+  padding-bottom: 0;
+}
+
+a.title:hover {
+  color: black;
+  letter-spacing: 4px; 
+}
+
+.hljs-github .hljs {
+  color: #F00000;
+}
+
+
+.hljs-github .hljs-number, .hljs-github .hljs-literal, .hljs-github .hljs-variable, .hljs-github .hljs-template-variable, .hljs-github .hljs-tag .hljs-attr {
+  color: black;
+}
+
+.loop {
+    position: absolute;
+    top: 57%;
+    left: 80%;
+    text-align: center;
+    font-size: 30px;
+    transform: translate(-50%, -50%);
+}
+
+li {
+line-height: 2em;
+}
+
+.small-list {
+font-size: 15px !important;
+}
+
+h1#believing-it-does-as-intended {
+margin-bottom: 0;
+}
+
+
+&lt;/style&gt;
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"slideNumberFormat": "%current%",
+"highlightStyle": "github",
+"highlightLines": true,
+"ratio": "16:9",
+"countIncrementalSlides": true
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
