@@ -27,6 +27,18 @@ mono_light(
   text_font_size = "24px",
   code_font_size = "1.2em"
 )
+
+library(tidyverse)
+test <- function(...) {
+    knitr::kable(format="html",
+                 bench::mark(...)
+                 %>% transmute(expression,
+                               median,
+                               relative_time=round(c(median/min(median)),1))
+                 %>% arrange(relative_time)
+                 
+    ) %>% kableExtra::kable_styling()
+}
 ```
 
 <img src="cover.png" style="width:50%;display: block;margin-left: auto;margin-right: auto;opacity:0.1;"></img>
@@ -99,8 +111,7 @@ colon_op <- function(n) {
 
 n <- 100
 
-bench::mark(grow(n), subscript(n), colon_op(n)
-            )[c("expression", "min", "median", "itr/sec", "n_gc")]
+test(grow(n), subscript(n), colon_op(n))
 ```
 
 </div>
@@ -134,8 +145,7 @@ vectorized <- function(x) {
 
 x <- 1:10000
 
-bench::mark(non_vectorized(x), vectorized(x)
-            )[c("expression", "min", "median", "itr/sec", "n_gc")]
+test(non_vectorized(x), vectorized(x))
 ```
 </div>
 ]
@@ -457,7 +467,6 @@ padding: 0;
 
 a.title:hover {
   color: black;
-  letter-spacing: 4px; 
 }
 
 .hljs-github .hljs {
@@ -488,6 +497,19 @@ font-size: 15px !important;
 
 h1#believing-it-does-as-intended {
 margin-bottom: 0;
+}
+
+table.table {
+width: 60%;
+}
+
+th {
+ background-color: white;
+ color: #F00000;
+}
+
+td {
+ background-color: white;
 }
 
 

@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="author" content="Maya Gans" />
     <meta name="date" content="2020-09-08" />
-    <script src="libs/header-attrs-2.3/header-attrs.js"></script>
+    <script src="libs/kePrint-0.0.1/kePrint.js"></script>
     <link rel="stylesheet" href="xaringan-themer.css" type="text/css" />
   </head>
   <body>
@@ -90,18 +90,35 @@ colon_op &lt;- function(n) {
 
 n &lt;- 100
 
-bench::mark(grow(n), subscript(n), colon_op(n)
-            )[c("expression", "min", "median", "itr/sec", "n_gc")]
+test(grow(n), subscript(n), colon_op(n))
 ```
 
-```
-## # A tibble: 3 x 4
-##   expression        min   median `itr/sec`
-##   &lt;bch:expr&gt;   &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt;
-## 1 grow(n)       28.69µs  30.82µs    30705.
-## 2 subscript(n)   5.05µs   5.33µs   184279.
-## 3 colon_op(n)  398.84ns 426.89ns  1570743.
-```
+&lt;table class="table" style="margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; expression &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; median &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; relative_time &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; colon_op(n) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 514ns &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.0 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; subscript(n) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 10.3µs &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 19.9 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; grow(n) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 54.6µs &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 106.3 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
 
 &lt;/div&gt;
 
@@ -135,17 +152,30 @@ vectorized &lt;- function(x) {
 
 x &lt;- 1:10000
 
-bench::mark(non_vectorized(x), vectorized(x)
-            )[c("expression", "min", "median", "itr/sec", "n_gc")]
+test(non_vectorized(x), vectorized(x))
 ```
 
-```
-## # A tibble: 2 x 4
-##   expression             min   median `itr/sec`
-##   &lt;bch:expr&gt;        &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt;
-## 1 non_vectorized(x)    615µs    643µs     1499.
-## 2 vectorized(x)        161µs    190µs     5063.
-```
+&lt;table class="table" style="margin-left: auto; margin-right: auto;"&gt;
+ &lt;thead&gt;
+  &lt;tr&gt;
+   &lt;th style="text-align:left;"&gt; expression &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; median &lt;/th&gt;
+   &lt;th style="text-align:right;"&gt; relative_time &lt;/th&gt;
+  &lt;/tr&gt;
+ &lt;/thead&gt;
+&lt;tbody&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; vectorized(x) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 158µs &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 1.0 &lt;/td&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+   &lt;td style="text-align:left;"&gt; non_vectorized(x) &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 658µs &lt;/td&gt;
+   &lt;td style="text-align:right;"&gt; 4.2 &lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
 &lt;/div&gt;
 ]
 ]
@@ -467,7 +497,6 @@ padding: 0;
 
 a.title:hover {
   color: black;
-  letter-spacing: 4px; 
 }
 
 .hljs-github .hljs {
@@ -498,6 +527,19 @@ font-size: 15px !important;
 
 h1#believing-it-does-as-intended {
 margin-bottom: 0;
+}
+
+table.table {
+width: 60%;
+}
+
+th {
+ background-color: white;
+ color: #F00000;
+}
+
+td {
+ background-color: white;
 }
 
 
